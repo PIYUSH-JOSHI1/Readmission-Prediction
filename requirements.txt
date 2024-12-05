@@ -4,4 +4,5 @@ numpy==1.24.3
 plotly==5.15.0
 streamlit-autorefresh==0.0.1
 scikit-learn==1.2.2
-distutils
+setuptools==65.5.0
+wheel==0.38.4
