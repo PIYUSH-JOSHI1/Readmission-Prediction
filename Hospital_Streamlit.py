@@ -6,6 +6,14 @@ import plotly.graph_objects as go
 from streamlit_autorefresh import st_autorefresh
 import pickle
 import os
+from io import BytesIO
+import pydicom
+import cv2
+import os
+import random
+from ultralytics import YOLO
+
+
 
 # Load languages
 def load_languages():
@@ -397,6 +405,188 @@ def analytics_page():
     })
     
     st.dataframe(dept_data.round(2), use_container_width=True)
+    
+def medical_image_analysis_page():
+    st.title("Medical Image Analysis")
+    
+    # Disease details dictionary
+    DISEASE_DETAILS = {
+        'Aortic enlargement': {
+            'description': 'Abnormal enlargement of the aorta',
+            'precautions': [
+                'Immediate cardiovascular consultation',
+                'Regular blood pressure monitoring',
+                'Avoid heavy lifting and strenuous activities'
+            ],
+            'admission': 'Immediate hospitalization if risk of rupture'
+        },
+        'Cardiomegaly': {
+            'description': 'Abnormal enlargement of the heart',
+            'precautions': [
+                'Restrict physical activities',
+                'Follow strict medication regimen',
+                'Regular cardiac monitoring'
+            ],
+            'admission': 'Urgent cardiac care if symptoms are severe'
+        },
+        'Pneumothorax': {
+            'description': 'Collapsed or partially collapsed lung',
+            'precautions': [
+                'Oxygen therapy',
+                'Chest tube insertion may be required',
+                'Complete bed rest'
+            ],
+            'admission': 'Immediate hospitalization'
+        },
+        'No finding': {
+            'description': 'No significant medical conditions detected',
+            'precautions': ['Regular health check-ups'],
+            'admission': 'Not required'
+        }
+    }
+    
+    # Ensure uploads directory exists
+    os.makedirs('uploads', exist_ok=True)
+    
+    # Load YOLO model
+    MODEL_PATH = 'yolov8n.pt'
+    model = YOLO(MODEL_PATH)
+    
+    # Disease classes
+    CLASSES = [
+        'Aortic enlargement', 'Atelectasis', 'Calcification', 'Cardiomegaly',
+        'Consolidation', 'ILD', 'Infiltration', 'Lung Opacity', 'Nodule/Mass',
+        'Other lesion', 'Pleural effusion', 'Pleural thickening', 'Pneumothorax',
+        'Pulmonary fibrosis', 'No finding'
+    ]
+    
+    st.markdown("### Upload Medical Image")
+    uploaded_file = st.file_uploader(
+        "Choose a medical image (DICOM, JPG, PNG)", 
+        type=['dcm', 'dicom', 'jpg', 'png']
+    )
+    
+    if uploaded_file is not None:
+        # Save the uploaded file
+        with open(os.path.join("uploads", uploaded_file.name), "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        
+        file_path = os.path.join("uploads", uploaded_file.name)
+        
+        try:
+            # Read the image
+            if uploaded_file.name.endswith('.dcm') or uploaded_file.name.endswith('.dicom'):
+                dicom = pydicom.dcmread(file_path)
+                img = dicom.pixel_array
+            else:
+                img = cv2.imread(file_path)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            
+            # Normalize and convert to RGB
+            img = (img / img.max() * 255).astype(np.uint8)
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+            
+            # Perform inference
+            results = model(img)
+            
+            # Process results
+            predictions = []
+            for r in results:
+                boxes = r.boxes.xyxy.cpu().numpy()
+                confidences = r.boxes.conf.cpu().numpy()
+                class_ids = r.boxes.cls.cpu().numpy().astype(int)
+                
+                for box, confidence, class_id in zip(boxes, confidences, class_ids):
+                    x_min, y_min, x_max, y_max = box
+                    predictions.append({
+                        'class_name': CLASSES[class_id],
+                        'confidence': float(confidence),
+                        'box': {
+                            'x_min': int(x_min),
+                            'y_min': int(y_min),
+                            'x_max': int(x_max),
+                            'y_max': int(y_max)
+                        }
+                    })
+            
+            # If no findings, add a default prediction
+            if not predictions:
+                predictions.append({
+                    'class_name': 'No finding',
+                    'confidence': 1.0,
+                    'box': {'x_min': 0, 'y_min': 0, 'x_max': 1, 'y_max': 1}
+                })
+            
+            # Visualize results
+            visualized_img = img.copy()
+            for pred in predictions:
+                color = [random.randint(0, 255) for _ in range(3)]
+                visualized_img = draw_bbox(visualized_img, 
+                                           [pred['box']['x_min'], pred['box']['y_min'], 
+                                            pred['box']['x_max'], pred['box']['y_max']],
+                                           pred['class_name'], 
+                                           pred['confidence'],
+                                           color)
+            
+            st.subheader("Analysis Results")
+            
+            # Create responsive layout
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                # Display image responsively
+                st.image(visualized_img, use_column_width=True, caption="Analyzed Medical Image")
+            
+            with col2:
+                # Detailed analysis report
+                st.markdown("### Detected Conditions")
+                
+                # Check if predictions exist
+                if not predictions:
+                    st.info("No significant findings detected.")
+                else:
+                    for pred in predictions:
+                        disease = pred['class_name']
+                        confidence = pred['confidence']
+                        
+                        st.markdown(f"#### {disease}")
+                        st.markdown(f"**Confidence:** {confidence:.2%}")
+                        
+                        # Retrieve disease details
+                        if disease in DISEASE_DETAILS:
+                            details = DISEASE_DETAILS[disease]
+                            st.markdown(f"**Description:** {details['description']}")
+                            
+                            st.markdown("**Precautions:**")
+                            for precaution in details['precautions']:
+                                st.markdown(f"- {precaution}")
+                            
+                            st.markdown(f"**Hospital Admission:** {details['admission']}")
+                        
+                        st.markdown("---")
+            
+            # Clean up temporary file
+            os.remove(file_path)
+        
+        except Exception as e:
+            st.error(f"An error occurred during image analysis: {str(e)}")
+
+def draw_bbox(image, box, label, confidence, color):   
+    alpha = 0.1
+    alpha_box = 0.4
+    overlay_bbox = image.copy()
+    overlay_text = image.copy()
+    output = image.copy()
+
+    text_width, text_height = cv2.getTextSize(label.upper(), cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)[0]
+    cv2.rectangle(overlay_bbox, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), color, -1)
+    cv2.addWeighted(overlay_bbox, alpha, output, 1 - alpha, 0, output)
+    cv2.rectangle(overlay_text, (int(box[0]), int(box[1])-7-text_height), (int(box[0])+text_width+2, int(box[1])), (0, 0, 0), -1)
+    cv2.addWeighted(overlay_text, alpha_box, output, 1 - alpha_box, 0, output)
+    cv2.rectangle(output, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), color, 2)
+    cv2.putText(output, label.upper(), (int(box[0]), int(box[1])-5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv2.LINE_AA)
+    cv2.putText(output, f"{confidence:.2f}", (int(box[0]), int(box[3])+20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
+    return output
 
 def main():
     st.set_page_config(
@@ -410,6 +600,7 @@ def main():
     
     languages = load_languages()
     
+    # Sidebar Navigation
     with st.sidebar:
         st.image("https://via.placeholder.com/150x150.png?text=Hospital+Logo", width=150)
         
@@ -418,18 +609,32 @@ def main():
             if st.session_state.user_profile['profile_picture']:
                 st.image(st.session_state.user_profile['profile_picture'], width=100)
         
-        selected_page = st.radio(
+        # Navigation menu
+        menu_options = [
+            "Dashboard", 
+            "Patient Prediction", 
+            "Analytics", 
+            "Medical Image Analysis",
+            "User Profile", 
+            "Emergency Contact", 
+            "About Us", 
+            "Settings"
+        ]
+        
+        selected_page = st.selectbox(
             languages[st.session_state.language]['welcome'],
-            ["Dashboard", "Patient Prediction", "Analytics", "User Profile", 
-             "Emergency Contact", "About Us", "Settings"]
+            menu_options
         )
     
+    # Page rendering based on selection
     if selected_page == "Dashboard":
         create_dynamic_dashboard()
     elif selected_page == "Patient Prediction":
         prediction_page()
     elif selected_page == "Analytics":
         analytics_page()
+    elif selected_page == "Medical Image Analysis":
+        medical_image_analysis_page()
     elif selected_page == "User Profile":
         user_profile_section()
     elif selected_page == "Emergency Contact":
@@ -438,6 +643,7 @@ def main():
         about_us_section()
     elif selected_page == "Settings":
         st.title("Settings")
+        # ... rest of the settings code remains the same
         
         st.subheader("Language Settings")
         new_language = st.selectbox(
