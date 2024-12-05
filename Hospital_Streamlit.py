@@ -1,144 +1,243 @@
-# import
 import pandas as pd
 import numpy as np
 import streamlit as st
-from streamlit_option_menu import option_menu
 import pickle
 from PIL import Image
-
+import streamlit.components.v1 as components
+import base64
+from datetime import datetime
+import plotly.express as px
 import warnings
 warnings.filterwarnings("ignore")
-#________________________________________________________________________
 
+# Theme configurations
+light_theme = {
+    'primary_color': '#0066cc',
+    'background_color': '#ffffff',
+    'secondary_bg': '#f0f2f6',
+    'text_color': '#262730',
+    'font': 'sans-serif'
+}
 
-def predict_readmission(Gender, Admission_Type, Diagnosis, Num_Lab_Procedures,
-       Num_Medications, Num_Outpatient_Visits, Num_Inpatient_Visits,
-       Num_Emergency_Visits, Num_Diagnoses, A1C_Result):
+dark_theme = {
+    'primary_color': '#4da6ff',
+    'background_color': '#0e1117',
+    'secondary_bg': '#262730',
+    'text_color': '#fafafa',
+    'font': 'sans-serif'
+}
 
-    with open("Readmission_Model.pkl","rb") as m:
-        model = pickle.load(m)
-    
-    data = np.array([[Gender, Admission_Type, Diagnosis, Num_Lab_Procedures,
-       Num_Medications, Num_Outpatient_Visits, Num_Inpatient_Visits,
-       Num_Emergency_Visits, Num_Diagnoses, A1C_Result]])
+def apply_custom_css():
+    st.markdown("""
+        <style>
+        .main {
+            padding: 0rem 1rem;
+        }
+        .stButton>button {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.3rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .stButton>button:hover {
+            opacity: 0.85;
+            transform: translateY(-2px);
+        }
+        .sidebar .sidebar-content {
+            background-image: linear-gradient(180deg, var(--secondary-bg) 10%, var(--background-color) 90%);
+        }
+        .css-1d391kg {
+            padding: 2rem 1rem;
+        }
+        .stSelectbox {
+            margin-bottom: 1rem;
+        }
+        .hospital-stats {
+            background-color: var(--secondary-bg);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .stat-card {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0.3rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+def load_model():
+    with open("Readmission_Model.pkl", "rb") as m:
+        return pickle.load(m)
+
+def predict_readmission(data):
+    model = load_model()
     prediction = model.predict(data)
-    out = prediction[0]
-    return out 
+    return prediction[0]
 
+def create_sidebar():
+    with st.sidebar:
+        st.image("https://via.placeholder.com/150x150.png?text=Hospital+Logo", width=150)
+        st.title("Navigation")
+        
+        selected_page = st.radio(
+            "Go to",
+            ["Dashboard", "Patient Prediction", "Analytics", "Settings"]
+        )
+        
+        st.markdown("---")
+        st.subheader("Theme Settings")
+        theme = st.selectbox(
+            "Choose Theme",
+            ["Light", "Dark"],
+            key="theme_selection"
+        )
+        
+        st.markdown("---")
+        st.caption("© 2024 Hospital Management System")
+        
+        return selected_page, theme
 
-#_________________________________________________________________________
-
-st.set_page_config(page_title= "Predicting Hospital Readmissions",
-                   layout= "wide",
-                   menu_items={'About': "### This page is created by Desilva!"})
-
-st.markdown("<h1 style='text-align: center; color: #fa6607;'>Predicting Hospital Readmissions</h1>", unsafe_allow_html=True)
-st.write("")
-
-select = option_menu(None,["Home", "Readmission"], 
-                    icons =["hospital-fill","ticket-detailed"], orientation="horizontal",
-                    styles={"container": {"padding": "0!important", "background-color": "#fafafa"},
-                            "icon": {"color": "#fdfcfb", "font-size": "20px"},
-                            "nav-link": {"font-size": "20px", "text-align": "center", "margin":"0px", "--hover-color": "#eee"},
-                            "nav-link-selected": {"background-color": "#fa6607"}})
-
-if select == "Home":
-    st.title("Welcome to the Hospital Readmissions Prediction Project!")
-
-    st.write('''
-**Objective:**
-The primary goal of this project is to develop a predictive model that accurately determines whether a patient will require readmission within 30 days after their initial discharge. By leveraging advanced machine learning techniques, this project aims to enhance patient care and optimize healthcare resources.
-
-**Key Features:**
-- **Predictive Modeling:** This machine learning model analyzes patient data to predict the likelihood of hospital readmission within 30 days. This predictive capability enables proactive intervention and personalized care planning for at-risk patients.
-
-- **Data-Driven Insights:** By processing comprehensive healthcare records, this model extracts valuable insights and identifies key factors contributing to readmission risk. These insights empower healthcare providers to make informed decisions and implement targeted interventions.
-
-**How It Works:**
-1. **Data Input:** This model accepts input data comprising patient demographics, medical history, previous hospitalizations, diagnoses, and medications.
-   
-2. **Predictive Analysis:** Leveraging state-of-the-art machine learning algorithms, the model processes the input data to generate predictions on whether readmission is required or not.
-
-3. **Actionable Recommendations:** Based on the model's predictions, healthcare providers can proactively engage with high-risk patients, implement preventive measures, and optimize post-discharge care plans to minimize readmission rates.
-
-**Technological Stack:**
-This predictive model is developed using Python, a versatile programming language for data science and machine learning. It leverages industry-standard libraries such as scikit-learn for modeling and pandas for data manipulation to ensure robust performance and reliability.
-
-**Stay Informed:**
-Follow along as this project explores the intricacies of hospital readmissions prediction and strives to make a positive impact on patient outcomes and healthcare delivery.
-
-''')
-
-elif select == "Readmission":
-
-    st.write("")
-    st.header("Fill all the details below to know the prediction")
-    st.write("")
-
-    col1,col2,col3 = st.columns([5,1,5])
+def dashboard_page():
+    st.title("Hospital Management Dashboard")
+    
+    # Mock statistics
+    col1, col2, col3 = st.columns(3)
     with col1:
-        selected_gender = st.selectbox('Select a Gender:', ["Female", "Male", "Other"])
-        if selected_gender == "Female":
-            Gender = 0
-        elif selected_gender == "Male":
-            Gender = 1
-        else:
-            Gender = 2
-
-
-        Selected_Admission_Type  = st.selectbox('Select a Admission Type:', ['Emergency','Urgent', 'Elective'])
-        if Selected_Admission_Type  == "Emergency":
-            Admission_Type = 1
-        elif Selected_Admission_Type == "Urgent":
-            Admission_Type = 2
-        else:
-            Admission_Type = 0
-
-        Selected_Diagnosis  = st.selectbox('Select a Diagnosis:', ['Heart Disease', 'Diabetes', 'Injury', 'Infection'])
-        if Selected_Admission_Type  == "Heart Disease":
-            Diagnosis = 1
-        elif Selected_Admission_Type == "Diabetes":
-            Diagnosis = 0
-        elif Selected_Admission_Type == "Injury":
-            Diagnosis = 3
-        else:
-            Diagnosis = 2
-
-        Num_Lab_Procedures  = st.selectbox('Select a Number of Lab Procedures:', range(1,100))
-
-        Num_Medications  = st.selectbox('Select a Number of Medications:', range(1,36))
-                         
-    with col3:
-        Num_Outpatient_Visits  = st.selectbox('Select a Number of Outpatient Visits:', range(0,5))
-
-        Num_Inpatient_Visits  = st.selectbox('Select a Number of Inpatient Visits:', range(0,5))
-
-        Num_Emergency_Visits  = st.selectbox('Select a Number of Emergency Visits:', range(0,5))
-
-        Num_Diagnoses  = st.selectbox('Select a Number of Diagnoses:', range(1,10))
-
-        A1C = st.selectbox('Select a Number of A1C Result:', ['Normal','Abnormal'])
-        if A1C  == "Normal":
-            A1C_Result = 1
-        else:
-            A1C_Result = 0
-
-    st.write("")
-    st.write("")
-
-    col1,col2,col3 = st.columns([3,4,3])
+        st.metric("Total Patients", "1,234", "+12%")
     with col2:
-        button = st.button(":red[PREDICT THE READMISSION]",use_container_width= True)
+        st.metric("Readmission Rate", "15.4%", "-2.1%")
+    with col3:
+        st.metric("Avg. Stay Duration", "4.2 days", "+0.3")
+    
+    # Mock chart
+    chart_data = pd.DataFrame(
+        np.random.randn(20, 3),
+        columns=['Admissions', 'Discharges', 'Readmissions']
+    )
+    st.line_chart(chart_data)
 
-        if button:
-            admission = predict_readmission(Gender, Admission_Type, Diagnosis, Num_Lab_Procedures,
-       Num_Medications, Num_Outpatient_Visits, Num_Inpatient_Visits,
-       Num_Emergency_Visits, Num_Diagnoses, A1C_Result)
-            if admission == 1:
-                st.write("## :red[Readmission is Required]")
-            else:
-                st.write("## :green[Readmission is Not Required]")                
+def prediction_page():
+    st.title("Patient Readmission Prediction")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        gender = st.selectbox('Gender:', ["Female", "Male", "Other"])
+        admission_type = st.selectbox('Admission Type:', ['Emergency', 'Urgent', 'Elective'])
+        diagnosis = st.selectbox('Diagnosis:', ['Heart Disease', 'Diabetes', 'Injury', 'Infection'])
+        lab_procedures = st.number_input('Number of Lab Procedures:', 1, 100, 1)
+        medications = st.number_input('Number of Medications:', 1, 36, 1)
+    
+    with col2:
+        outpatient_visits = st.number_input('Number of Outpatient Visits:', 0, 5, 0)
+        inpatient_visits = st.number_input('Number of Inpatient Visits:', 0, 5, 0)
+        emergency_visits = st.number_input('Number of Emergency Visits:', 0, 5, 0)
+        num_diagnoses = st.number_input('Number of Diagnoses:', 1, 10, 1)
+        a1c_result = st.selectbox('A1C Result:', ['Normal', 'Abnormal'])
+    
+    # Convert inputs to model format
+    if st.button("Predict Readmission", key="predict_button"):
+        # Convert categorical variables
+        gender_code = {"Female": 0, "Male": 1, "Other": 2}[gender]
+        admission_code = {"Emergency": 1, "Urgent": 2, "Elective": 0}[admission_type]
+        diagnosis_code = {"Heart Disease": 1, "Diabetes": 0, "Injury": 3, "Infection": 2}[diagnosis]
+        a1c_code = {"Normal": 1, "Abnormal": 0}[a1c_result]
+        
+        # Prepare data for prediction
+        input_data = np.array([[
+            gender_code, admission_code, diagnosis_code, lab_procedures,
+            medications, outpatient_visits, inpatient_visits,
+            emergency_visits, num_diagnoses, a1c_code
+        ]])
+        
+        # Make prediction
+        result = predict_readmission(input_data)
+        
+        # Display result with styling
+        if result == 1:
+            st.error("⚠️ High Risk: Readmission is Required")
+            st.markdown("""
+                ### Recommended Actions:
+                1. Schedule follow-up appointment within 7 days
+                2. Review medication compliance
+                3. Coordinate with care management team
+            """)
+        else:
+            st.success("✅ Low Risk: Readmission is Not Required")
+            st.markdown("""
+                ### Recommended Actions:
+                1. Schedule routine follow-up within 30 days
+                2. Provide standard discharge instructions
+                3. Document any concerns for future reference
+            """)
 
+def analytics_page():
+    st.title("Analytics & Insights")
+    
+    # Mock data for demonstration
+    dates = pd.date_range(start='2024-01-01', end='2024-12-31', freq='M')
+    readmission_data = pd.DataFrame({
+        'Date': dates,
+        'Readmission_Rate': np.random.uniform(10, 20, len(dates)),
+        'Patient_Satisfaction': np.random.uniform(80, 95, len(dates))
+    })
+    
+    # Plotting
+    fig = px.line(readmission_data, x='Date', y=['Readmission_Rate', 'Patient_Satisfaction'],
+                  title='Hospital Performance Metrics')
+    st.plotly_chart(fig)
 
-#__________________________________________END_____________________________________________________________
-            
+def settings_page():
+    st.title("Settings")
+    
+    st.subheader("User Preferences")
+    st.checkbox("Enable email notifications")
+    st.checkbox("Enable SMS alerts")
+    
+    st.subheader("System Settings")
+    st.selectbox("Default prediction threshold", ["Low", "Medium", "High"])
+    st.selectbox("Data refresh frequency", ["Hourly", "Daily", "Weekly"])
+
+def main():
+    st.set_page_config(
+        page_title="Hospital Readmission Prediction System",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+    
+    apply_custom_css()
+    selected_page, theme = create_sidebar()
+    
+    # Apply selected theme
+    current_theme = dark_theme if theme == "Dark" else light_theme
+    st.markdown(f"""
+        <style>
+        :root {{
+            --primary-color: {current_theme['primary_color']};
+            --background-color: {current_theme['background_color']};
+            --secondary-bg: {current_theme['secondary_bg']};
+            --text-color: {current_theme['text_color']};
+            --font: {current_theme['font']};
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Display selected page
+    if selected_page == "Dashboard":
+        dashboard_page()
+    elif selected_page == "Patient Prediction":
+        prediction_page()
+    elif selected_page == "Analytics":
+        analytics_page()
+    elif selected_page == "Settings":
+        settings_page()
+
+if __name__ == "__main__":
+    main()
