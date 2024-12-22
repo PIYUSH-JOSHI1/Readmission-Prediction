@@ -14,5 +14,4 @@ packaging
 requests
 matplotlib
 scikit-learn
-pydicom
-ultralytics
+
