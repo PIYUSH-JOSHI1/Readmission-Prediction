@@ -151,7 +151,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 - Google Cloud team for the AI Platform services
 
 ## 💬 Support
-For support, email: support@hospitalsystem.com or raise an issue in the repository.
+For support, email: drigoon2512M@gmail.com or raise an issue in the repository.
 
 ## 🗺️ Roadmap
 - [ ] Integration with Electronic Health Records
