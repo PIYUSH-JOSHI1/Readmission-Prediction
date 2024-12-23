@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Tumor Classification</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+ <div style="display: flex; justify-content: center;">
+    <div class="container1">
+        <h1>Brain Tumor Classifier</h1>
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit">Upload & Predict</button>
+        </form>
+    </div>
+    <div class="container">
+        {% if result %}
+        <div class="result">
+            <h2>Prediction: {{ result }}</h2>
+            <p>Description: {{ description }}</p>
+
+            {% if uploaded_image_url %}
+            <div class="uploaded-image">
+                <h3>Uploaded Image:</h3>
+                <img src="{{ uploaded_image_url }}" alt="Uploaded Image" />
+            </div>
+            {% endif %}
+
+        {% endif %}
+    </div>
+   </div>
+   <div class="container">
+    {% if result %}
+        <table>
+            <tr>
+                <th>Class</th>
+                <th>Prediction Percentage</th>
+            </tr>
+            {% for prediction in prediction_percentages %}
+            <tr>
+                <td><h4>{{ prediction.class }}</h4></td>
+                <td>{{ prediction.percentage }}%</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <table>
+            <tr>
+                <th>Result</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><h4>{{result}}</h4></td>
+                <td>{{description }}</td>
+            </tr>
+        </table>
+        {% endif %}
+    </div>   
+ </div>
+</body>
+</html>

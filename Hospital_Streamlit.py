@@ -3,17 +3,16 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import plotly.graph_objects as go
+import plotly.express as px
 from streamlit_autorefresh import st_autorefresh
 import pickle
 import os
 from io import BytesIO
 import pydicom
 import cv2
-import os
 import random
 from ultralytics import YOLO
-
-
+from plotly.subplots import make_subplots
 
 # Load languages
 def load_languages():
@@ -51,18 +50,6 @@ def load_languages():
     }
 
 # Theme configurations
-light_theme = {
-    'primary_color': '#0066cc',
-    'background_color': '#ffffff',
-    'secondary_bg': '#f0f2f6',
-    'text_color': '#262730',
-    'font': 'sans-serif',
-    'card_bg': '#ffffff',
-    'success_color': '#28a745',
-    'warning_color': '#ffc107',
-    'danger_color': '#dc3545'
-}
-
 dark_theme = {
     'primary_color': '#4da6ff',
     'background_color': '#0e1117',
@@ -74,6 +61,135 @@ dark_theme = {
     'warning_color': '#ffd534',
     'danger_color': '#ff4961'
 }
+
+# 3D Scatter plot for visual appeal
+def create_3d_scatter():
+    x = np.random.randn(100)
+    y = np.random.randn(100)
+    z = np.random.randn(100)
+    
+    fig = go.Figure(data=[go.Scatter3d(
+        x=x, y=y, z=z,
+        mode='markers',
+        marker=dict(
+            size=5,
+            color=z,
+            colorscale='Viridis',
+            opacity=0.8
+        )
+    )])
+    
+    fig.update_layout(
+        scene=dict(
+            xaxis_title='X',
+            yaxis_title='Y',
+            zaxis_title='Z',
+            bgcolor='rgba(0,0,0,0)'
+        ),
+        margin=dict(r=0, b=0, l=0, t=0),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+    
+    return fig
+
+def create_dynamic_dashboard():
+    st.title("Hospital Dashboard")
+    
+    st_autorefresh(interval=10000, key="dashboard_refresh")
+    
+    current_time = datetime.now()
+    times = pd.date_range(end=current_time, periods=20, freq='1min')
+    
+    # 3D Scatter plot for visual appeal
+    st.subheader("Hospital Activity Visualization")
+    fig_3d = create_3d_scatter()
+    st.plotly_chart(fig_3d, use_container_width=True)
+    
+    # Interactive metrics with hover effect
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        current_patients = np.random.randint(80, 120)
+        st.metric("Current Patients", current_patients, delta=np.random.randint(-5, 5))
+    with col2:
+        bed_capacity = f"{np.random.randint(60, 90)}%"
+        st.metric("Bed Capacity", bed_capacity, delta=f"{np.random.randint(-3, 3)}%")
+    with col3:
+        staff_on_duty = np.random.randint(40, 60)
+        st.metric("Staff on Duty", staff_on_duty, delta=np.random.randint(-2, 2))
+    
+    # Interactive charts
+    fig = make_subplots(rows=1, cols=2, subplot_titles=("Patient Flow (Last 20 minutes)", "Department Load (%)"))
+    
+    # Patient Flow
+    fig.add_trace(
+        go.Scatter(
+            x=times,
+            y=np.random.randint(50, 100, size=20),
+            name="Admissions",
+            mode='lines+markers',
+            line=dict(color='#4da6ff', width=3),
+            marker=dict(size=8, symbol='circle', line=dict(color='#ffffff', width=2))
+        ),
+        row=1, col=1
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=times,
+            y=np.random.randint(40, 90, size=20),
+            name="Discharges",
+            mode='lines+markers',
+            line=dict(color='#ff4961', width=3),
+            marker=dict(size=8, symbol='circle', line=dict(color='#ffffff', width=2))
+        ),
+        row=1, col=1
+    )
+    
+    # Department Load
+    departments = ['ER', 'ICU', 'Surgery', 'Pediatrics', 'General']
+    values = np.random.randint(40, 100, size=len(departments))
+    fig.add_trace(
+        go.Bar(
+            x=departments,
+            y=values,
+            marker_color='#4da6ff',
+            hoverinfo='y',
+            textposition='auto',
+            textfont=dict(color='white'),
+            hoverlabel=dict(bgcolor='#1a1a1a', font_size=14)
+        ),
+        row=1, col=2
+    )
+    
+    fig.update_layout(
+        height=500,
+        showlegend=False,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#fafafa'),
+        margin=dict(l=20, r=20, t=60, b=20),
+    )
+    fig.update_xaxes(showgrid=False, zeroline=False)
+    fig.update_yaxes(showgrid=True, gridcolor='rgba(255,255,255,0.1)', zeroline=False)
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    emergency_data = pd.DataFrame({
+        'Time': times[-5:],
+        'Type': np.random.choice(['Critical', 'Moderate', 'Minor'], size=5),
+        'Department': np.random.choice(['ER', 'ICU', 'Surgery'], size=5),
+        'Status': np.random.choice(['In Progress', 'Waiting', 'Completed'], size=5)
+    })
+    
+    st.subheader("Recent Emergency Cases")
+    st.dataframe(
+        emergency_data.style
+        .applymap(lambda x: f'color: {dark_theme["text_color"]}; background-color: {dark_theme["card_bg"]}')
+        .set_properties(**{'background-color': dark_theme['card_bg'], 'color': dark_theme['text_color'], 'border-color': dark_theme['primary_color']})
+        .highlight_max(axis=0, props='color: #ff4961; font-weight: bold;')
+        .highlight_min(axis=0, props='color: #2fd36e; font-weight: bold;'),
+        use_container_width=True
+    )
 
 def user_profile_section():
     st.title("User Profile")
@@ -188,61 +304,6 @@ def about_us_section():
         st.subheader(dept)
         st.write(desc)
 
-def create_dynamic_dashboard():
-    st.title("Hospital Dashboard")
-    
-    st_autorefresh(interval=10000, key="dashboard_refresh")
-    
-    current_time = datetime.now()
-    times = pd.date_range(end=current_time, periods=20, freq='1min')
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        current_patients = np.random.randint(80, 120)
-        st.metric("Current Patients", current_patients, delta=np.random.randint(-5, 5))
-    with col2:
-        bed_capacity = f"{np.random.randint(60, 90)}%"
-        st.metric("Bed Capacity", bed_capacity, delta=f"{np.random.randint(-3, 3)}%")
-    with col3:
-        staff_on_duty = np.random.randint(40, 60)
-        st.metric("Staff on Duty", staff_on_duty, delta=np.random.randint(-2, 2))
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        fig1 = go.Figure()
-        fig1.add_trace(go.Scatter(
-            x=times,
-            y=np.random.randint(50, 100, size=20),
-            name="Admissions",
-            mode='lines+markers'
-        ))
-        fig1.add_trace(go.Scatter(
-            x=times,
-            y=np.random.randint(40, 90, size=20),
-            name="Discharges",
-            mode='lines+markers'
-        ))
-        fig1.update_layout(title="Patient Flow (Last 20 minutes)")
-        st.plotly_chart(fig1)
-    
-    with col2:
-        departments = ['ER', 'ICU', 'Surgery', 'Pediatrics', 'General']
-        values = np.random.randint(40, 100, size=len(departments))
-        fig2 = go.Figure(data=[go.Bar(x=departments, y=values)])
-        fig2.update_layout(title="Department Load (%)")
-        st.plotly_chart(fig2)
-    
-    emergency_data = pd.DataFrame({
-        'Time': times[-5:],
-        'Type': np.random.choice(['Critical', 'Moderate', 'Minor'], size=5),
-        'Department': np.random.choice(['ER', 'ICU', 'Surgery'], size=5),
-        'Status': np.random.choice(['In Progress', 'Waiting', 'Completed'], size=5)
-    })
-    
-    st.subheader("Recent Emergency Cases")
-    st.dataframe(emergency_data, use_container_width=True)
-
 def prediction_page():
     st.title("Patient Readmission Prediction")
     
@@ -344,68 +405,85 @@ def analytics_page():
         bed_turnover = total_admissions / len(dates)
         st.metric("Daily Bed Turnover", f"{bed_turnover:.1f}")
     
-    st.subheader("Admissions vs Discharges Trend")
-    fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(
+    fig = make_subplots(rows=2, cols=2, subplot_titles=("Admissions vs Discharges Trend", "Readmission Trend", "Average Length of Stay Trend", "Department-wise Statistics"))
+    
+    # Admissions vs Discharges Trend
+    fig.add_trace(go.Scatter(
         x=analytics_data['Date'],
         y=analytics_data['Admissions'],
         name="Admissions",
-        line=dict(color='blue')
-    ))
-    fig1.add_trace(go.Scatter(
+        line=dict(color='#4da6ff', width=3)
+    ), row=1, col=1)
+    fig.add_trace(go.Scatter(
         x=analytics_data['Date'],
         y=analytics_data['Discharges'],
         name="Discharges",
-        line=dict(color='green')
-    ))
-    fig1.update_layout(
-        xaxis_title="Date",
-        yaxis_title="Number of Patients",
-        hovermode='x unified'
+        line=dict(color='#ff4961', width=3)
+    ), row=1, col=1)
+    
+    # Readmission Trend
+    fig.add_trace(go.Scatter(
+        x=analytics_data['Date'],
+        y=analytics_data['Readmissions'],
+        name="Readmissions",
+        line=dict(color='#ffd534', width=3)
+    ), row=1, col=2)
+    
+    # Average Length of Stay Trend
+    fig.add_trace(go.Scatter(
+        x=analytics_data['Date'],
+        y=analytics_data['Average_Stay'],
+        name="Average Stay",
+        line=dict(color='#2fd36e', width=3)
+    ), row=2, col=1)
+    
+    # Department-wise Statistics
+    departments = ['Emergency', 'Surgery', 'Cardiology', 'Pediatrics', 'Neurology']
+    occupancy_rates = np.random.uniform(60, 95, len(departments))
+    fig.add_trace(go.Bar(
+        x=departments,
+        y=occupancy_rates,
+        name="Occupancy Rate",
+        marker_color='#4da6ff'
+    ), row=2, col=2)
+    
+    fig.update_layout(
+        height=800,
+        showlegend=True,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#fafafa'),
+        legend=dict(
+            bgcolor='rgba(0,0,0,0)',
+            bordercolor='rgba(0,0,0,0)'
+        )
     )
-    st.plotly_chart(fig1, use_container_width=True)
+    fig.update_xaxes(showgrid=False, zeroline=False)
+    fig.update_yaxes(showgrid=True, gridcolor='rgba(255,255,255,0.1)', zeroline=False)
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Readmission Trend")
-        fig2 = go.Figure()
-        fig2.add_trace(go.Scatter(
-            x=analytics_data['Date'],
-            y=analytics_data['Readmissions'],
-            line=dict(color='red')
-        ))
-        fig2.update_layout(
-            xaxis_title="Date",
-            yaxis_title="Number of Readmissions",
-        )
-        st.plotly_chart(fig2, use_container_width=True)
-    
-    with col2:
-        st.subheader("Average Length of Stay Trend")
-        fig3 = go.Figure()
-        fig3.add_trace(go.Scatter(
-            x=analytics_data['Date'],
-            y=analytics_data['Average_Stay'],
-            line=dict(color='purple')
-        ))
-        fig3.update_layout(
-            xaxis_title="Date",
-            yaxis_title="Days",
-        )
-        st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
     
     st.subheader("Department-wise Statistics")
-    departments = ['Emergency', 'Surgery', 'Cardiology', 'Pediatrics', 'Neurology']
     dept_data = pd.DataFrame({
         'Department': departments,
-        'Occupancy_Rate': np.random.uniform(60, 95, len(departments)),
+        'Occupancy_Rate': occupancy_rates,
         'Avg_Stay': np.random.uniform(2, 8, len(departments)),
         'Patient_Satisfaction': np.random.uniform(75, 95, len(departments))
     })
     
-    st.dataframe(dept_data.round(2), use_container_width=True)
-    
+    st.dataframe(
+        dept_data.style.format({
+            'Occupancy_Rate': '{:.2f}%',
+            'Avg_Stay': '{:.2f}',
+            'Patient_Satisfaction': '{:.2f}%'
+        })
+        .applymap(lambda x: f'color: {dark_theme["text_color"]}; background-color: {dark_theme["card_bg"]}')
+        .set_properties(**{'background-color': dark_theme['card_bg'], 'color': dark_theme['text_color'], 'border-color': dark_theme['primary_color']})
+        .highlight_max(axis=0, props='color: #2fd36e; font-weight: bold;')
+        .highlight_min(axis=0, props='color: #ff4961; font-weight: bold;'),
+        use_container_width=True
+    )
+
 def medical_image_analysis_page():
     st.title("Medical Image Analysis")
     
@@ -588,6 +666,129 @@ def draw_bbox(image, box, label, confidence, color):
     cv2.putText(output, f"{confidence:.2f}", (int(box[0]), int(box[3])+20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
     return output
 
+import streamlit as st
+from transformers import pipeline
+import requests
+
+def chatbot_page():
+    st.title("Hospital Assistant Chatbot")
+    
+    # Initialize chat history in session state if it doesn't exist
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+    
+    # Chat interface
+    st.write("Chat with our hospital assistant for help and information.")
+    
+    # Display chat history
+    for message in st.session_state.chat_history:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+    
+    # Chat input
+    if prompt := st.chat_input("Ask me anything about the hospital..."):
+        # Add user message to chat history
+        st.session_state.chat_history.append({"role": "user", "content": prompt})
+        
+        # Display user message
+        with st.chat_message("user"):
+            st.write(prompt)
+        
+        # Get chatbot response using HuggingFace API
+        API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill"
+        headers = {"Authorization": "Bearer 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"}  # Get free API key from huggingface.co
+        
+        try:
+            # Make API call
+            response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
+            response_data = response.json()
+            
+            # Extract and clean bot response
+            bot_response = response_data[0]["generated_text"]
+            
+            # Add bot response to chat history
+            st.session_state.chat_history.append({"role": "assistant", "content": bot_response})
+            
+            # Display bot response
+            with st.chat_message("assistant"):
+                st.write(bot_response)
+                
+        except Exception as e:
+            st.error(f"Error getting response from chatbot: {str(e)}")
+            
+    # Add clear chat button
+    if st.button("Clear Chat"):
+        st.session_state.chat_history = []
+        st.experimental_rerun()
+
+# Add chatbot to main navigation
+import tensorflow as tf
+from PIL import Image
+
+# Add this function after the medical_image_analysis_page() function
+def brain_tumor_detection_page():
+    st.title("Brain Tumor Detection")
+    
+    def load_model_with_custom_objects(model_path):
+        def custom_depthwise_conv2d(*args, **kwargs):
+            if 'groups' in kwargs:
+                del kwargs['groups']
+            return tf.keras.layers.DepthwiseConv2D(*args, **kwargs)
+        
+        custom_objects = {
+            'DepthwiseConv2D': custom_depthwise_conv2d,
+            'tf': tf
+        }
+        
+        try:
+            model = tf.keras.models.load_model(
+                model_path, 
+                custom_objects=custom_objects,
+                compile=False
+            )
+            return model
+        except Exception as e:
+            st.error(f"Model loading failed: {e}")
+            return None
+
+    def preprocess_image(image):
+        image = image.convert("RGB")
+        image = image.resize((224, 224))
+        image_array = np.array(image) / 255.0
+        image_array = np.expand_dims(image_array, axis=0)
+        return image_array
+
+    model_path = 'models/keras_model.h5'
+    model = load_model_with_custom_objects(model_path)
+    
+    if model is None:
+        st.error("Could not load the model.")
+        return
+    
+    uploaded_file = st.file_uploader("Upload brain scan image", type=['jpg', 'png', 'jpeg'])
+    
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Uploaded Scan", use_column_width=True)
+        
+        try:
+            processed_image = preprocess_image(image)
+            predictions = model.predict(processed_image)
+            
+            CLASS_LABELS = ["Pituitary", "No Tumor", "Meningioma", "Glioma"]
+            
+            st.subheader("Prediction Results:")
+            for label, prob in zip(CLASS_LABELS, predictions[0]):
+                st.progress(float(prob))
+                st.write(f"{label}: {prob*100:.2f}%")
+            
+            predicted_class = CLASS_LABELS[np.argmax(predictions)]
+            st.success(f"Predicted Condition: {predicted_class}")
+            
+        except Exception as e:
+            st.error(f"Analysis failed: {e}")
+
+
 def main():
     st.set_page_config(
         page_title="Hospital Management System",
@@ -614,11 +815,13 @@ def main():
             "Dashboard", 
             "Patient Prediction", 
             "Analytics", 
+            "Brain Tumor Detection",
             "Medical Image Analysis",
             "User Profile", 
             "Emergency Contact", 
             "About Us", 
-            "Settings"
+            "Settings",
+            "Chatbot" 
         ]
         
         selected_page = st.selectbox(
@@ -626,11 +829,16 @@ def main():
             menu_options
         )
     
+     
+    if selected_page == "Chatbot":
+        chatbot_page()
     # Page rendering based on selection
     if selected_page == "Dashboard":
         create_dynamic_dashboard()
     elif selected_page == "Patient Prediction":
         prediction_page()
+    elif selected_page == "Brain Tumor Detection":
+        brain_tumor_detection_page()
     elif selected_page == "Analytics":
         analytics_page()
     elif selected_page == "Medical Image Analysis":
@@ -643,7 +851,6 @@ def main():
         about_us_section()
     elif selected_page == "Settings":
         st.title("Settings")
-        # ... rest of the settings code remains the same
         
         st.subheader("Language Settings")
         new_language = st.selectbox(
@@ -658,10 +865,10 @@ def main():
         st.subheader("Theme Settings")
         theme = st.selectbox(
             "Choose Theme",
-            ["Light", "Dark"]
+            ["Dark"]
         )
         
-        current_theme = dark_theme if theme == "Dark" else light_theme
+        current_theme = dark_theme
         st.markdown(f"""
             <style>
             :root {{
@@ -677,6 +884,52 @@ def main():
             }}
             </style>
         """, unsafe_allow_html=True)
+
+    # Add 3D effect and continuous movement
+    st.markdown("""
+    <script>
+    const cursor = document.createElement('div');
+    cursor.className = 'custom-cursor';
+    document.body.appendChild(cursor);
+
+    document.addEventListener('mousemove', (e) => {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+        
+        const elements = document.querySelectorAll('.stPlotlyChart, .stDataFrame, .stMetric');
+        elements.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width - 0.5;
+            const y = (e.clientY - rect.top) / rect.height - 0.5;
+            el.style.transform = `perspective(1000px) rotateY(${x * 5}deg) rotateX(${-y * 5}deg)`;
+        });
+    });
+    </script>
+    <style>
+    .custom-cursor {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        position: fixed;
+        pointer-events: none;
+        z-index: 9999;
+        mix-blend-mode: difference;
+    }
+    .stPlotlyChart, .stDataFrame, .stMetric {
+        transition: transform 0.1s ease;
+    }
+    .stMetric {
+        background: linear-gradient(145deg, rgba(26,26,26,0.6) 0%, rgba(26,26,26,0.8) 100%);
+        border-radius: 10px;
+        padding: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .stMetric:hover {
+        background: linear-gradient(145deg, rgba(26,26,26,0.8) 0%, rgba(26,26,26,1) 100%);
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
