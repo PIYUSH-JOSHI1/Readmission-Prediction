@@ -14,4 +14,6 @@ packaging
 requests
 matplotlib
 scikit-learn
-
+h5py
+transformer
+pydicom
