@@ -98,7 +98,7 @@ export API_KEY="your-api-key"
 
 4. Run the application:
 ```bash
-streamlit run main.py
+streamlit run Hospital_Streamlit.py
 ```
 
 ## ⚙️ Configuration
