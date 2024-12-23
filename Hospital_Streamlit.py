@@ -671,76 +671,137 @@ from typing import List
 from datetime import datetime
 from fpdf import FPDF
 import io
+import PIL.Image
+from gtts import gTTS
+import base64
 
 def chatbot_page():
-    st.title("Hospital Assistant Chatbot")
+    st.title("🏥 Hospital AI Assistant")
+    st.write("Chat with our AI assistant for hospital-related queries and image analysis.")
+
+    # Language settings in sidebar
+    st.sidebar.title("Language Settings")
+    language = st.sidebar.radio("Choose Response Language:", ["English", "Hindi", "Marathi"])
+
+    # Configure Gemini API
+    genai.configure(api_key=st.secrets["google"]["api_key"])
     
-    genai.configure(api_key='AIzaSyCatNalQ6N0HTFr1LeO772un3YLx68G_Vk')
-    model = genai.GenerativeModel('gemini-pro')
+    # Initialize models
+    text_model = genai.GenerativeModel('gemini-pro')
+    vision_model = genai.GenerativeModel('gemini-pro-vision')
     
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
-        st.session_state.chat = model.start_chat(history=[])
+        st.session_state.chat = text_model.start_chat(history=[])
+
+    # Image upload section
+    uploaded_image = st.file_uploader("📤 Upload an image for analysis", type=['jpg', 'jpeg', 'png'])
     
+    if uploaded_image:
+        # Save and display uploaded image
+        image = PIL.Image.open(uploaded_image)
+        st.image(image, caption="Uploaded Image", use_column_width=True)
+        
+        # Add image analysis button
+        # if st.button("🔍 Analyze Image"):
+        #     with st.spinner("Analyzing image..."):
+        #         try:
+        #             prompt = f"Analyze this medical image and describe what you see in {language.lower()}. If it's not a medical image, please provide a general description."
+        #             response = vision_model.generate_content([prompt, image])
+                    
+        #             if response and hasattr(response, "text"):
+        #                 analysis_text = response.text
+        #                 st.session_state.chat_history.append({
+        #                     "role": "assistant",
+        #                     "content": analysis_text,
+        #                     "type": "image_analysis"
+        #                 })
+                        
+        #                 # Add text-to-speech option
+        #                 st.write("#### 📢 Listen to the analysis:")
+        #                 if st.button("🔊 Play Analysis"):
+        #                     lang_code = 'hi' if language == "Hindi" else 'mr' if language == "Marathi" else 'en'
+        #                     tts = gTTS(text=analysis_text, lang=lang_code)
+        #                     audio = BytesIO()
+        #                     tts.write_to_fp(audio)
+        #                     audio.seek(0)
+        #                     audio_base64 = base64.b64encode(audio.read()).decode()
+        #                     audio_tag = f'<audio controls autoplay><source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3"></audio>'
+        #                     st.markdown(audio_tag, unsafe_allow_html=True)
+        #         except Exception as e:
+        #             st.error(f"Error during image analysis: {str(e)}")
+
+    # Display chat history
     for message in st.session_state.chat_history:
         with st.chat_message(message["role"]):
             st.write(message["content"])
-    
+            if message.get("type") == "image_analysis":
+                # Add audio playback option for image analysis
+                if st.button(f"🔊 Play Response", key=f"play_{len(st.session_state.chat_history)}"):
+                    lang_code = 'hi' if language == "Hindi" else 'mr' if language == "Marathi" else 'en'
+                    tts = gTTS(text=message["content"], lang=lang_code)
+                    audio = BytesIO()
+                    tts.write_to_fp(audio)
+                    audio.seek(0)
+                    audio_base64 = base64.b64encode(audio.read()).decode()
+                    audio_tag = f'<audio controls autoplay><source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3"></audio>'
+                    st.markdown(audio_tag, unsafe_allow_html=True)
+
+    # Chat input
     if prompt := st.chat_input("Ask me anything about the hospital..."):
         st.session_state.chat_history.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.write(prompt)
         
         try:
-            response = st.session_state.chat.send_message(prompt)
+            # Handle regular text queries
+            response = text_model.generate_content([
+                f"Respond in {language.lower()} to the following query: {prompt}"
+            ])
             bot_response = response.text
-            st.session_state.chat_history.append({"role": "assistant", "content": bot_response})
+            st.session_state.chat_history.append({
+                "role": "assistant",
+                "content": bot_response,
+                "type": "text"
+            })
             with st.chat_message("assistant"):
                 st.write(bot_response)
+                # Add audio option for text responses
+                # if st.button("🔊 Play Response", key=f"play_text_{len(st.session_state.chat_history)}"):
+                #     lang_code = 'hi' if language == "Hindi" else 'mr' if language == "Marathi" else 'en'
+                #     tts = gTTS(text=bot_response, lang=lang_code)
+                #     audio = BytesIO()
+                #     tts.write_to_fp(audio)
+                #     audio.seek(0)
+                #     audio_base64 = base64.b64encode(audio.read()).decode()
+                #     audio_tag = f'<audio controls autoplay><source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3"></audio>'
+                #     st.markdown(audio_tag, unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Error: {str(e)}")
     
-    col1, col2, col3 = st.columns(3)
+    # Export options
+    # st.sidebar.title("Chat Options")
+    # if st.sidebar.button("🗑️ Clear Chat"):
+    #     st.session_state.chat_history = []
+    #     st.session_state.chat = text_model.start_chat(history=[])
+    #     st.experimental_rerun()
     
-    with col1:
-        if st.button("Clear Chat"):
-            st.session_state.chat_history = []
-            st.session_state.chat = model.start_chat(history=[])
-            st.experimental_rerun()
-    
-    with col2:
-        if st.button("Export as PDF"):
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", size=12)
-            
-            pdf.cell(200, 10, txt="Chat History", ln=True, align='C')
-            for msg in st.session_state.chat_history:
-                pdf.cell(200, 10, txt=f"{msg['role'].title()}: {msg['content']}", ln=True)
-            
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            pdf_output = pdf.output(dest='S').encode('latin-1')
-            
-            st.download_button(
-                "Download PDF",
-                data=pdf_output,
-                file_name=f"chat_export_{timestamp}.pdf",
-                mime="application/pdf"
-            )
-    
-    with col3:
-        if st.button("Export as TXT"):
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            txt_content = ""
-            for msg in st.session_state.chat_history:
-                txt_content += f"{msg['role'].title()}: {msg['content']}\n\n"
-            
-            st.download_button(
-                "Download TXT",
-                data=txt_content,
-                file_name=f"chat_export_{timestamp}.txt",
-                mime="text/plain"
-            )
+    if st.sidebar.button("📥 Export Chat"):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        txt_content = ""
+        for msg in st.session_state.chat_history:
+            txt_content += f"{msg['role'].title()}: {msg['content']}\n\n"
+        
+        st.sidebar.download_button(
+            "📄 Download Chat",
+            data=txt_content,
+            file_name=f"chat_export_{timestamp}.txt",
+            mime="text/plain"
+        )
+
+    # Footer
+    st.markdown("---")
+    st.markdown("Made with ❤️ for Tatva-AI")
 # Add chatbot to main navigation
 import tensorflow as tf
 from PIL import Image
