@@ -1,136 +1,179 @@
-# Hospital Readmission Prediction Project
+# 🏥 Hospital Management System
 
-## Project Overview
+## 📋 Overview
+A comprehensive hospital management system built with Streamlit, featuring real-time analytics, medical image analysis, patient prediction, and multilingual support. The system includes advanced features like brain tumor detection, chatbot assistance, and dynamic dashboards.
 
-This machine learning project aims to predict hospital readmissions within 30 days of initial discharge, helping healthcare providers proactively manage patient care and optimize resource allocation.
+## ⭐ Features
 
-## 🏥 Project Purpose
+### 🔷 Core Functionalities
+- **📊 Dynamic Dashboard**
+  - Real-time patient flow monitoring
+  - Interactive 3D data visualization
+  - Department-wise statistics
+  - Bed capacity tracking
+  - Staff monitoring
 
-The primary objective is to develop a predictive model that accurately determines the likelihood of a patient requiring readmission, enabling:
-- Early intervention strategies
-- Personalized patient care planning
-- Efficient healthcare resource management
+### 🔬 Medical Analysis Tools
+- **🧠 Brain Tumor Detection**
+  - AI-powered tumor classification
+  - Support for multiple tumor types (Pituitary, Meningioma, Glioma)
+  - Real-time image processing
+  - Confidence score display
 
-## ✨ Key Features
+- **🔍 Medical Image Analysis**
+  - DICOM file support
+  - Multiple format support (JPG, PNG)
+  - Disease detection and classification
+  - Automated reporting system
+  - Visual annotations with confidence scores
 
-- **Predictive Analytics:** Machine learning model to forecast hospital readmission risks
-- **Interactive Web Interface:** Streamlit-based application for easy prediction
-- **Comprehensive Patient Data Analysis:** Considers multiple patient attributes
+### 👥 Patient Management
+- **📈 Patient Prediction System**
+  - Readmission risk analysis
+  - Multiple factor consideration
+  - Automated recommendations
+  - Risk factor visualization
 
-## 🛠 Tech Stack
+- **📊 Analytics Dashboard**
+  - Patient flow trends
+  - Department-wise statistics
+  - Length of stay analysis
+  - Interactive visualizations
+  - Custom time period selection
 
-- **Language:** Python
-- **Machine Learning:** scikit-learn
-- **Web Interface:** Streamlit
-- **Data Manipulation:** Pandas, NumPy
-- **Model Serialization:** Pickle
+### 🤝 Support Features
+- **🤖 Hospital Assistant Chatbot**
+  - Natural language processing
+  - PDF/TXT export functionality
+  - Chat history management
+  - Real-time responses
 
-## 📊 Input Features
+- **🚨 Emergency Contact System**
+  - Quick access to emergency services
+  - Emergency alert submission
+  - Location tracking
+  - Priority-based routing
 
-The model considers the following patient characteristics:
-- Gender
-- Admission Type
-- Primary Diagnosis
-- Number of Lab Procedures
-- Number of Medications
-- Outpatient Visits
-- Inpatient Visits
-- Emergency Visits
-- Total Diagnoses
-- A1C Test Results
+## 💻 Technical Requirements
+
+### 📦 Dependencies
+```python
+streamlit
+pandas
+numpy
+plotly
+opencv-python
+tensorflow
+pillow
+pydicom
+google-cloud-aiplatform
+ultralytics
+fpdf
+```
+
+### ⚙️ Additional Requirements
+- Python 3.8+
+- CUDA-compatible GPU (for AI models)
+- Minimum 8GB RAM
+- 50GB storage space
 
 ## 🚀 Installation
 
-### Prerequisites
-- Python 3.8+
-- pip
-
-### Setup Steps
-1. Clone the repository
+1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/hospital-readmission-prediction.git
-cd hospital-readmission-prediction
+git clone https://github.com/PIYUSH-JOSHI1/Readmission-Prediction.git
+cd Readmission-Prediction
 ```
 
-2. Create virtual environment
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-```
-
-3. Install dependencies
+2. Install required packages:
 ```bash
 pip install -r requirements.txt
 ```
 
-## 🔧 Project Structure
-
-```
-project-root/
-│
-├── data/
-│   ├── train_data.csv
-│   └── test_data.csv
-│
-├── Readmission_Model.pkl
-├── app.py
-├── train_model.py
-├── requirements.txt
-└── README.md
-```
-
-## 🤖 Model Training
-
-To retrain the model:
+3. Set up environment variables:
 ```bash
-python train_model.py
+export GOOGLE_APPLICATION_CREDENTIALS="path/to/credentials.json"
+export API_KEY="your-api-key"
 ```
 
-## 🌐 Running the Streamlit App
-
+4. Run the application:
 ```bash
-streamlit run app.py
+streamlit run main.py
 ```
 
-## 📈 Model Performance
+## ⚙️ Configuration
 
-- **Accuracy:** [Insert model accuracy]
-- **Precision:** [Insert precision score]
-- **Recall:** [Insert recall score]
+### 🌐 Language Settings
+The system supports multiple languages:
+- 🇺🇸 English (default)
+- 🇪🇸 Spanish
+- 🇫🇷 French
 
-## 🔬 Methodology
+Configure language settings in the settings menu.
 
-1. Data Preprocessing
-2. Feature Engineering
-3. Model Selection (Random Forest Classifier)
-4. Hyperparameter Tuning
-5. Model Evaluation
+### 🎨 Theme Configuration
+Currently supports:
+- 🌙 Dark theme (default)
+Custom themes can be configured in `dark_theme` dictionary.
 
-## 🤝 Contributing
+## 🔒 Security Features
+- Secure file handling
+- API key protection
+- Session state management
+- Secure data transmission
 
+## 🤖 Model Information
+
+### 🧠 Brain Tumor Detection Model
+- Architecture: Custom CNN
+- Input size: 224x224x3
+- Output classes: 4 (Pituitary, No Tumor, Meningioma, Glioma)
+
+### 🔍 Medical Image Analysis Model
+- Framework: YOLO v8
+- Supported formats: DICOM, JPG, PNG
+- Real-time detection capabilities
+
+## 👥 Contributing
 1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
-
-## ⚠️ Limitations & Disclaimers
-
-- This is a predictive model and should not replace professional medical advice
-- Performance depends on the quality and representativeness of training data
-- Regular retraining and validation are recommended
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📄 License
+This project is licensed under the MIT License - see the LICENSE.md file for details.
 
-[Choose an appropriate license, e.g., MIT License]
+## 🙏 Acknowledgments
+- TensorFlow team for the deep learning framework
+- Streamlit team for the web framework
+- YOLO team for the object detection model
+- Google Cloud team for the AI Platform services
 
-## 📞 Contact
+## 💬 Support
+For support, email: support@hospitalsystem.com or raise an issue in the repository.
 
-[Your Name]
-- Email: your.email@example.com
-- LinkedIn: [Your LinkedIn Profile]
-- Project Link: https://github.com/yourusername/hospital-readmission-prediction
+## 🗺️ Roadmap
+- [ ] Integration with Electronic Health Records
+- [ ] Mobile application development
+- [ ] Additional language support
+- [ ] Advanced analytics features
+- [ ] Real-time patient monitoring
+- [ ] Integration with medical devices
 
----
-
-**Note:** Replace placeholders with your specific project details.
+## 🏗️ System Architecture
+```
+hospital-management-system/
+├── main.py
+├── models/
+│   ├── keras_model.h5
+│   └── yolov8n.pt
+├── uploads/
+├── static/
+│   └── assets/
+├── utils/
+│   ├── image_processing.py
+│   └── data_analysis.py
+└── config/
+    └── settings.py
+```
