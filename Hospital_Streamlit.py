@@ -666,61 +666,81 @@ def draw_bbox(image, box, label, confidence, color):
     cv2.putText(output, f"{confidence:.2f}", (int(box[0]), int(box[3])+20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
     return output
 
-import streamlit as st
-from transformers import pipeline
-import requests
+import google.generativeai as genai
+from typing import List
+from datetime import datetime
+from fpdf import FPDF
+import io
 
 def chatbot_page():
     st.title("Hospital Assistant Chatbot")
     
-    # Initialize chat history in session state if it doesn't exist
+    genai.configure(api_key='AIzaSyCatNalQ6N0HTFr1LeO772un3YLx68G_Vk')
+    model = genai.GenerativeModel('gemini-pro')
+    
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
+        st.session_state.chat = model.start_chat(history=[])
     
-    # Chat interface
-    st.write("Chat with our hospital assistant for help and information.")
-    
-    # Display chat history
     for message in st.session_state.chat_history:
         with st.chat_message(message["role"]):
             st.write(message["content"])
     
-    # Chat input
     if prompt := st.chat_input("Ask me anything about the hospital..."):
-        # Add user message to chat history
         st.session_state.chat_history.append({"role": "user", "content": prompt})
-        
-        # Display user message
         with st.chat_message("user"):
             st.write(prompt)
         
-        # Get chatbot response using HuggingFace API
-        API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill"
-        headers = {"Authorization": "Bearer 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"}  # Get free API key from huggingface.co
-        
         try:
-            # Make API call
-            response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
-            response_data = response.json()
-            
-            # Extract and clean bot response
-            bot_response = response_data[0]["generated_text"]
-            
-            # Add bot response to chat history
+            response = st.session_state.chat.send_message(prompt)
+            bot_response = response.text
             st.session_state.chat_history.append({"role": "assistant", "content": bot_response})
-            
-            # Display bot response
             with st.chat_message("assistant"):
                 st.write(bot_response)
-                
         except Exception as e:
-            st.error(f"Error getting response from chatbot: {str(e)}")
+            st.error(f"Error: {str(e)}")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("Clear Chat"):
+            st.session_state.chat_history = []
+            st.session_state.chat = model.start_chat(history=[])
+            st.experimental_rerun()
+    
+    with col2:
+        if st.button("Export as PDF"):
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
             
-    # Add clear chat button
-    if st.button("Clear Chat"):
-        st.session_state.chat_history = []
-        st.experimental_rerun()
-
+            pdf.cell(200, 10, txt="Chat History", ln=True, align='C')
+            for msg in st.session_state.chat_history:
+                pdf.cell(200, 10, txt=f"{msg['role'].title()}: {msg['content']}", ln=True)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            pdf_output = pdf.output(dest='S').encode('latin-1')
+            
+            st.download_button(
+                "Download PDF",
+                data=pdf_output,
+                file_name=f"chat_export_{timestamp}.pdf",
+                mime="application/pdf"
+            )
+    
+    with col3:
+        if st.button("Export as TXT"):
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            txt_content = ""
+            for msg in st.session_state.chat_history:
+                txt_content += f"{msg['role'].title()}: {msg['content']}\n\n"
+            
+            st.download_button(
+                "Download TXT",
+                data=txt_content,
+                file_name=f"chat_export_{timestamp}.txt",
+                mime="text/plain"
+            )
 # Add chatbot to main navigation
 import tensorflow as tf
 from PIL import Image
