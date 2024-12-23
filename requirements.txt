@@ -17,3 +17,5 @@ scikit-learn
 h5py
 pydicom
 ultralytics
+transformers
+torch
