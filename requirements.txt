@@ -24,3 +24,6 @@ tensorflow==2.16.1
 pillow==10.2.0
 numpy==1.26.3
 h5py==3.10.0
+
+google-generativeai
+fpdf
