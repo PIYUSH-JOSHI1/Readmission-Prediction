@@ -884,7 +884,7 @@ def main():
     
     # Sidebar Navigation
     with st.sidebar:
-        st.image("https://via.placeholder.com/150x150.png?text=Hospital+Logo", width=150)
+        st.image("logo.jpeg", width=150)
         
         if 'user_profile' in st.session_state and st.session_state.user_profile['name']:
             st.write(f"Welcome, {st.session_state.user_profile['name']}")
