@@ -884,7 +884,9 @@ def main():
     
     # Sidebar Navigation
     with st.sidebar:
-        st.image("logo.jpeg", width=150)
+        st.markdown("<h2 style=' color: #4da6ff;'>Tatva AI</h2>", unsafe_allow_html=True)
+
+        st.image("logo.jpeg", width=100)
         
         if 'user_profile' in st.session_state and st.session_state.user_profile['name']:
             st.write(f"Welcome, {st.session_state.user_profile['name']}")
